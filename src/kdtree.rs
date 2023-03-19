@@ -10,8 +10,8 @@ use crate::util;
 #[derive(Clone, Debug)]
 pub struct KdTree<A, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> {
     // node
-    left: Option<Box<KdTree<A, T, U>>>,
-    right: Option<Box<KdTree<A, T, U>>>,
+    pub left: Option<Box<KdTree<A, T, U>>>,
+    pub right: Option<Box<KdTree<A, T, U>>>,
     // common
     dimensions: usize,
     capacity: usize,
@@ -19,11 +19,11 @@ pub struct KdTree<A, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq
     min_bounds: Box<[A]>,
     max_bounds: Box<[A]>,
     // stem
-    split_value: Option<A>,
-    split_dimension: Option<usize>,
+    pub split_value: Option<A>,
+    pub split_dimension: Option<usize>,
     // leaf
-    points: Option<Vec<U>>,
-    bucket: Option<Vec<T>>,
+    pub points: Option<Vec<U>>,
+    pub bucket: Option<Vec<T>>,
 }
 
 #[derive(Error, Debug, PartialEq, Eq)]
