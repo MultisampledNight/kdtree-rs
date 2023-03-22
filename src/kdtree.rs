@@ -389,7 +389,7 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                 f,
                 "{indent}{four_spaces}split_value: {} on {}",
                 self.split_value.unwrap(),
-                self.split_dimension.unwrap(),
+                dimension_label(self.split_dimension.unwrap()),
             )?;
 
             write!(f, "{indent}{four_spaces}left: ")?;
@@ -416,6 +416,16 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
         writeln!(f, "{indent}}}")?;
 
         Ok(())
+    }
+}
+
+fn dimension_label(dim: usize) -> String {
+    match dim {
+        0 => "x".to_string(),
+        1 => "y".to_string(),
+        2 => "z".to_string(),
+        3 => "w".to_string(),
+        _ => format!("x{dim}"),
     }
 }
 
