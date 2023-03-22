@@ -384,7 +384,6 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
         writeln!(f, "KdTree {{")?;
         if let (Some(left), Some(right)) = (&self.left, &self.right) {
             // internal node
-            // TODO pretty print dimension
             writeln!(
                 f,
                 "{indent}{four_spaces}split_value: {} on {}",
