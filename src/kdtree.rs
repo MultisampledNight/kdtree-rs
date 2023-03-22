@@ -374,7 +374,7 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
 {
     fn fmt_on_level(&self, f: &mut fmt::Formatter<'_>, level: usize) -> fmt::Result {
         if self.size() == 0 {
-            writeln!(f, "KdTree {{}}")?;
+            write!(f, "KdTree {{}}")?;
             return Ok(());
         }
 
@@ -412,7 +412,7 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
             }
             writeln!(f, "{indent}{four_spaces}]")?;
         }
-        writeln!(f, "{indent}}}")?;
+        write!(f, "{indent}}}")?;
 
         Ok(())
     }
