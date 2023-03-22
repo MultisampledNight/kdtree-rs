@@ -1,4 +1,5 @@
 use std::collections::BinaryHeap;
+use std::fmt;
 
 use num_traits::{Float, One, Zero};
 use thiserror::Error;
@@ -7,7 +8,7 @@ use crate::heap_element::HeapElement;
 use crate::util;
 
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct KdTree<A, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> {
     // node
     pub left: Option<Box<KdTree<A, T, U>>>,
@@ -365,6 +366,64 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
             }
         }
         Ok(())
+    }
+}
+
+impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
+    KdTree<A, T, U>
+{
+    fn fmt_on_level(&self, f: &mut fmt::Formatter<'_>, level: usize) -> fmt::Result {
+        if self.size() == 0 {
+            writeln!(f, "KdTree {{}}")?;
+            return Ok(());
+        }
+
+        let four_spaces = " ".repeat(4);
+        let indent = four_spaces.repeat(level);
+
+        writeln!(f, "KdTree {{")?;
+        if let (Some(left), Some(right)) = (&self.left, &self.right) {
+            // internal node
+            // TODO pretty print dimension
+            writeln!(
+                f,
+                "{indent}{four_spaces}split_value: {} on {}",
+                self.split_value.unwrap(),
+                self.split_dimension.unwrap(),
+            )?;
+
+            write!(f, "{indent}{four_spaces}left: ")?;
+            left.fmt_on_level(f, level + 1)?;
+
+            write!(f, "{indent}{four_spaces}right: ")?;
+            right.fmt_on_level(f, level + 1)?;
+        } else {
+            // leaf node
+            writeln!(f, "{indent}{four_spaces}points: [")?;
+            for point in self.points.as_ref().unwrap() {
+                write!(f, "{indent}{four_spaces}{four_spaces}(")?;
+
+                for (i, component) in point.as_ref().iter().enumerate() {
+                    if i != 0 {
+                        write!(f, ",\t")?;
+                    }
+                    write!(f, "{component:+}")?;
+                }
+                writeln!(f, ")")?;
+            }
+            writeln!(f, "{indent}{four_spaces}]")?;
+        }
+        writeln!(f, "{indent}}}")?;
+
+        Ok(())
+    }
+}
+
+impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> fmt::Debug
+    for KdTree<A, T, U>
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.fmt_on_level(f, 0)
     }
 }
 
