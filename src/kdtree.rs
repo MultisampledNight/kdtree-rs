@@ -394,7 +394,7 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
             write!(f, "{indent}{four_spaces}left: ")?;
             left.fmt_on_level(f, level + 1)?;
 
-            write!(f, "\n{indent}{four_spaces}right: ")?;
+            write!(f, "{indent}{four_spaces}right: ")?;
             right.fmt_on_level(f, level + 1)?;
         } else {
             // leaf node
@@ -412,7 +412,7 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
             }
             writeln!(f, "{indent}{four_spaces}]")?;
         }
-        write!(f, "{indent}}}")?;
+        writeln!(f, "{indent}}}")?;
 
         Ok(())
     }
