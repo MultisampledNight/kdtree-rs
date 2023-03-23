@@ -412,7 +412,11 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
             }
             writeln!(f, "{indent}{four_spaces}]")?;
         }
-        writeln!(f, "{indent}}}")?;
+        write!(f, "{indent}}}")?;
+
+        if level != 0 {
+            writeln!(f)?;
+        }
 
         Ok(())
     }
