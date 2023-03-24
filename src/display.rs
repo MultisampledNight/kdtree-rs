@@ -189,9 +189,9 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                 for point in self.points.as_ref().unwrap() {
                     write!(
                         f,
-                        "\n{indent}({}, {}) circle[radius=0.05]",
-                        point.as_ref()[0],
-                        point.as_ref()[1]
+                        "\n{indent}({x}, {y}) circle[radius=0.05] node[anchor=north, black!60] {{\\footnotesize ({x}, {y})}}",
+                        x = point.as_ref()[0],
+                        y = point.as_ref()[1]
                     )?;
                 }
                 writeln!(f, ";")?;
