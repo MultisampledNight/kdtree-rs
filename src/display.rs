@@ -5,15 +5,15 @@ use num_traits::{Float, One, Zero};
 use crate::KdTree;
 
 #[derive(Copy, Clone)]
-enum FormatMode {
+enum FormatMode<A: Float + Zero + One + fmt::Display> {
     Text { level: usize },
-    TikZ,
+    TikZ { min_x: A, max_x: A, min_y: A, max_y: A },
 }
 
 impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
     KdTree<A, T, U>
 {
-    fn fmt_recursively(&self, f: &mut fmt::Formatter<'_>, mode: FormatMode) -> fmt::Result {
+    fn fmt_recursively(&self, f: &mut fmt::Formatter<'_>, mode: FormatMode<A>) -> fmt::Result {
         if self.size() == 0 {
             if let FormatMode::Text { .. } = mode {
                 write!(f, "KdTree {{}}")?;
@@ -24,7 +24,7 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
         let four_spaces = " ".repeat(4);
         let indent = match mode {
             FormatMode::Text { level } => four_spaces.repeat(level),
-            FormatMode::TikZ => four_spaces.clone(),
+            FormatMode::TikZ { .. } => four_spaces.clone(),
         };
 
         match (&self.left, &self.right, mode) {
@@ -64,13 +64,19 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                 write!(f, "{indent}}}")?;
             }
 
-            (Some(left), Some(right), FormatMode::TikZ) => {
+            (Some(left), Some(right), FormatMode::TikZ { min_x, max_x, min_y, max_y }) => {
                 // internal node
+                // draw the split line
                 todo!()
             }
-            (_, _, FormatMode::TikZ) => {
+            (_, _, FormatMode::TikZ { .. }) => {
                 // leaf node
-                todo!()
+                // just draw each point
+                write!(f, r"\draw[fill=black]")?;
+                for point in self.points.as_ref().unwrap() {
+                    write!(f, "\n{indent}({}, {}) circle[radius=0.05]", point.as_ref()[0], point.as_ref()[1])?;
+                }
+                writeln!(f, ";")?;
             }
         }
 
@@ -115,9 +121,8 @@ where
     <A as Div<f64>>::Output: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let [min_x, min_y] = self.0.min_bounds.as_ref() else { panic!() };
-        let [max_x, max_y] = self.0.max_bounds.as_ref() else { panic!() };
-        let scale = ((*min_x - *max_x).abs() + (*min_y - *max_y).abs()) / 30.0;
+        let &[min_x, min_y] = self.0.min_bounds.as_ref() else { panic!() };
+        let &[max_x, max_y] = self.0.max_bounds.as_ref() else { panic!() };
 
         writeln!(
             f,
@@ -127,23 +132,21 @@ where
 \usetikzlibrary{{arrows.meta}}
 
 \begin{{document}}
-\begin{{tikzpicture}}[circle, very thick, scale={scale}]
+\begin{{tikzpicture}}
 
-\node[anchor=north east] (o) at (0, 0) {{0}};
-\draw[->,thin] ({min_x}, 0) -- ({max_x}, 0);
-\draw[->,thin] (0, {min_y}) -- (0, {max_y});
+\draw[->, black!40] ({min_x}, 0) -- ({max_x}, 0);
+\draw[->, black!40] (0, {min_y}) -- (0, {max_y});
 "#
         )?;
 
-        self.0.fmt_recursively(f, FormatMode::TikZ)?;
+        self.0.fmt_recursively(f, FormatMode::TikZ { min_x, max_x, min_y, max_y })?;
 
         writeln!(
             f,
-            r#"\end{{tikzpicture}}
+            r#"
+\end{{tikzpicture}}
 \end{{document}}"#
-        )?;
-
-        todo!()
+        )
     }
 }
 
