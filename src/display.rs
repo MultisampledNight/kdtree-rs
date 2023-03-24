@@ -101,13 +101,21 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                         // x top
                         "".to_string(),
                         format!(
-                            r" node[anchor=south, align=flush center] {{{split_value} \\[-4pt] {{\tiny L}} x {{\tiny R}}}}"
+                            " node[anchor=south, align=flush center] \
+                            {{\
+                                 {split_value} \\\\[-4pt] \
+                                 {{\\tiny L}} x {{\\tiny R}}\
+                            }}"
                         ),
                     ),
                     (0, true) => (
                         // x bottom
                         format!(
-                            r" node[anchor=north, align=flush center] {{{{\tiny L}} x {{\tiny R}} \\[-4pt] {split_value} }}"
+                            " node[anchor=north, align=flush center] \
+                            {{\
+                                 {{\\tiny L}} x {{\\tiny R}} \\\\[-4pt] \
+                                 {split_value}\
+                            }}"
                         ),
                         "".to_string(),
                     ),
@@ -115,13 +123,23 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                         // y right
                         "".to_string(),
                         format!(
-                            r" node[anchor=west, align=flush left] {{{{\tiny R}} \\[-2pt] y {split_value} \\[-2pt] {{\tiny L}} }}"
+                            " node[anchor=west, align=flush left] \
+                            {{\
+                                 {{\\tiny R}} \\\\[-2pt] \
+                                 y {split_value} \\\\[-2pt] \
+                                 {{\\tiny L}}\
+                            }}"
                         ),
                     ),
                     (1, true) => (
                         // y left
                         format!(
-                            r" node[anchor=east, align=flush right] {{{{\tiny R}} \\[-2pt] {split_value} y \\[-2pt] {{\tiny L}} }}"
+                            " node[anchor=east, align=flush right] \
+                            {{\
+                                 {{\\tiny R}} \\\\[-2pt] \
+                                 {split_value} y \\\\[-2pt] \
+                                 {{\\tiny L}}\
+                             }}"
                         ),
                         "".to_string(),
                     ),
