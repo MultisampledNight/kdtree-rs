@@ -10,12 +10,17 @@ enum FormatMode<A: Float + Zero + One + fmt::Display> {
         level: usize,
     },
     TikZ {
-        min_x: A,
-        max_x: A,
-        min_y: A,
-        max_y: A,
+        bounds: Bounds<A>,
         flip_node_position: bool,
     },
+}
+
+#[derive(Copy, Clone)]
+struct Bounds<A: Float + Zero + One + fmt::Display> {
+    min_x: A,
+    max_x: A,
+    min_y: A,
+    max_y: A,
 }
 
 impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
@@ -76,10 +81,13 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                 Some(left),
                 Some(right),
                 FormatMode::TikZ {
-                    min_x,
-                    max_x,
-                    min_y,
-                    max_y,
+                    bounds:
+                        bounds @ Bounds {
+                            min_x,
+                            max_x,
+                            min_y,
+                            max_y,
+                        },
                     flip_node_position,
                 },
             ) => {
@@ -89,25 +97,29 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                 let split_dimension = self.split_dimension.unwrap();
 
                 let (first_pos_node, second_pos_node) = match (split_dimension, flip_node_position) {
-                    (0, false) => ( // x top
+                    (0, false) => (
+                        // x top
                         "".to_string(),
                         format!(
                             r" node[anchor=south, align=flush center] {{{split_value} \\[-4pt] {{\tiny L}} x {{\tiny R}}}}"
                         ),
                     ),
-                    (0, true) => ( // x bottom
+                    (0, true) => (
+                        // x bottom
                         format!(
-                            r" node[anchor=north, align=flush center] {{{{\tiny L}} x {{\tiny R}}}} \\[-4pt] {split_value}"
+                            r" node[anchor=north, align=flush center] {{{{\tiny L}} x {{\tiny R}} \\[-4pt] {split_value} }}"
                         ),
                         "".to_string(),
                     ),
-                    (1, false) => ( // y right
+                    (1, false) => (
+                        // y right
                         "".to_string(),
                         format!(
                             r" node[anchor=west, align=flush left] {{{{\tiny R}} \\[-2pt] y {split_value} \\[-2pt] {{\tiny L}} }}"
                         ),
                     ),
-                    (1, true) => ( // y left
+                    (1, true) => (
+                        // y left
                         format!(
                             r" node[anchor=east, align=flush right] {{{{\tiny R}} \\[-2pt] {split_value} y \\[-2pt] {{\tiny L}} }}"
                         ),
@@ -116,22 +128,59 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                     _ => unreachable!(),
                 };
 
-                match split_dimension {
-                    0 => writeln!(
-                        f,
-                        r"\draw ({split_value}, {min_y}){} -- ({split_value}, {max_y}){}",
-                        first_pos_node, second_pos_node,
-                    )?,
-                    1 => writeln!(
-                        f,
-                        r"\draw ({min_x}, {split_value}){} -- ({max_x}, {split_value}){}",
-                        first_pos_node, second_pos_node,
-                    )?,
+                let (left_mode, right_mode) = match split_dimension {
+                    0 => {
+                        writeln!(
+                            f,
+                            r"\draw ({split_value}, {min_y}){} -- ({split_value}, {max_y}){};",
+                            first_pos_node, second_pos_node,
+                        )?;
+                        (
+                            FormatMode::TikZ {
+                                bounds: Bounds {
+                                    max_x: split_value,
+                                    ..bounds
+                                },
+                                flip_node_position: true,
+                            },
+                            FormatMode::TikZ {
+                                bounds: Bounds {
+                                    min_x: split_value,
+                                    ..bounds
+                                },
+                                flip_node_position: true,
+                            },
+                        )
+                    }
+                    1 => {
+                        writeln!(
+                            f,
+                            r"\draw ({min_x}, {split_value}){} -- ({max_x}, {split_value}){};",
+                            first_pos_node, second_pos_node,
+                        )?;
+                        (
+                            FormatMode::TikZ {
+                                bounds: Bounds {
+                                    max_y: split_value,
+                                    ..bounds
+                                },
+                                flip_node_position: true,
+                            },
+                            FormatMode::TikZ {
+                                bounds: Bounds {
+                                    min_y: split_value,
+                                    ..bounds
+                                },
+                                flip_node_position: true,
+                            },
+                        )
+                    }
                     _ => unreachable!(),
-                }
+                };
 
-                // adjust bounding boxes and recurse
-                todo!()
+                // now that we drew the line and figured out the bounds, let's recurse
+                left.fmt_recursively(f, left_mode)?;
+                right.fmt_recursively(f, right_mode)?;
             }
             (_, _, FormatMode::TikZ { .. }) => {
                 // leaf node
@@ -211,10 +260,12 @@ where
         self.0.fmt_recursively(
             f,
             FormatMode::TikZ {
-                min_x,
-                max_x,
-                min_y,
-                max_y,
+                bounds: Bounds {
+                    min_x,
+                    max_x,
+                    min_y,
+                    max_y,
+                },
                 flip_node_position: false,
             },
         )?;
