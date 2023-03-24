@@ -59,6 +59,7 @@ extern crate thiserror;
 #[cfg_attr(feature = "serialize", macro_use)]
 extern crate serde_derive;
 
+mod display;
 pub mod distance;
 mod heap_element;
 pub mod kdtree;

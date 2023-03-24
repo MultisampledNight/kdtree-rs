@@ -1,5 +1,4 @@
 use std::collections::BinaryHeap;
-use std::fmt;
 
 use num_traits::{Float, One, Zero};
 use thiserror::Error;
@@ -14,11 +13,11 @@ pub struct KdTree<A, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq
     pub left: Option<Box<KdTree<A, T, U>>>,
     pub right: Option<Box<KdTree<A, T, U>>>,
     // common
-    dimensions: usize,
+    pub dimensions: usize,
     capacity: usize,
     size: usize,
-    min_bounds: Box<[A]>,
-    max_bounds: Box<[A]>,
+    pub min_bounds: Box<[A]>,
+    pub max_bounds: Box<[A]>,
     // stem
     pub split_value: Option<A>,
     pub split_dimension: Option<usize>,
@@ -366,77 +365,6 @@ impl<A: Float + Zero + One, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::Pa
             }
         }
         Ok(())
-    }
-}
-
-impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
-    KdTree<A, T, U>
-{
-    fn fmt_on_level(&self, f: &mut fmt::Formatter<'_>, level: usize) -> fmt::Result {
-        if self.size() == 0 {
-            write!(f, "KdTree {{}}")?;
-            return Ok(());
-        }
-
-        let four_spaces = " ".repeat(4);
-        let indent = four_spaces.repeat(level);
-
-        writeln!(f, "KdTree {{")?;
-        if let (Some(left), Some(right)) = (&self.left, &self.right) {
-            // internal node
-            writeln!(
-                f,
-                "{indent}{four_spaces}split_value: {} on {}",
-                self.split_value.unwrap(),
-                dimension_label(self.split_dimension.unwrap()),
-            )?;
-
-            write!(f, "{indent}{four_spaces}left: ")?;
-            left.fmt_on_level(f, level + 1)?;
-
-            write!(f, "{indent}{four_spaces}right: ")?;
-            right.fmt_on_level(f, level + 1)?;
-        } else {
-            // leaf node
-            writeln!(f, "{indent}{four_spaces}points: [")?;
-            for point in self.points.as_ref().unwrap() {
-                write!(f, "{indent}{four_spaces}{four_spaces}(")?;
-
-                for (i, component) in point.as_ref().iter().enumerate() {
-                    if i != 0 {
-                        write!(f, ",\t")?;
-                    }
-                    write!(f, "{component:+}")?;
-                }
-                writeln!(f, ")")?;
-            }
-            writeln!(f, "{indent}{four_spaces}]")?;
-        }
-        write!(f, "{indent}}}")?;
-
-        if level != 0 {
-            writeln!(f)?;
-        }
-
-        Ok(())
-    }
-}
-
-fn dimension_label(dim: usize) -> String {
-    match dim {
-        0 => "x".to_string(),
-        1 => "y".to_string(),
-        2 => "z".to_string(),
-        3 => "w".to_string(),
-        _ => format!("x{dim}"),
-    }
-}
-
-impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> fmt::Debug
-    for KdTree<A, T, U>
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.fmt_on_level(f, 0)
     }
 }
 
