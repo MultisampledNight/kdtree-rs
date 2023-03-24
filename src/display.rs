@@ -4,52 +4,77 @@ use num_traits::{Float, One, Zero};
 
 use crate::KdTree;
 
+#[derive(Copy, Clone)]
+enum FormatMode {
+    Text { level: usize },
+    TikZ,
+}
+
 impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
     KdTree<A, T, U>
 {
-    fn fmt_on_level(&self, f: &mut fmt::Formatter<'_>, level: usize) -> fmt::Result {
+    fn fmt_recursively(&self, f: &mut fmt::Formatter<'_>, mode: FormatMode) -> fmt::Result {
         if self.size() == 0 {
-            write!(f, "KdTree {{}}")?;
+            if let FormatMode::Text { .. } = mode {
+                write!(f, "KdTree {{}}")?;
+            }
             return Ok(());
         }
 
         let four_spaces = " ".repeat(4);
-        let indent = four_spaces.repeat(level);
+        let indent = match mode {
+            FormatMode::Text { level } => four_spaces.repeat(level),
+            FormatMode::TikZ => four_spaces.clone(),
+        };
 
-        writeln!(f, "KdTree {{")?;
-        if let (Some(left), Some(right)) = (&self.left, &self.right) {
-            // internal node
-            writeln!(
-                f,
-                "{indent}{four_spaces}split_value: {} on {}",
-                self.split_value.unwrap(),
-                dimension_label(self.split_dimension.unwrap()),
-            )?;
+        match (&self.left, &self.right, mode) {
+            (Some(left), Some(right), FormatMode::Text { level }) => {
+                // internal node
+                writeln!(f, "KdTree {{")?;
+                writeln!(
+                    f,
+                    "{indent}{four_spaces}split_value: {} on {}",
+                    self.split_value.unwrap(),
+                    dimension_label(self.split_dimension.unwrap()),
+                )?;
 
-            write!(f, "{indent}{four_spaces}left: ")?;
-            left.fmt_on_level(f, level + 1)?;
+                write!(f, "{indent}{four_spaces}left: ")?;
+                left.fmt_recursively(f, FormatMode::Text { level: level + 1 })?;
 
-            write!(f, "{indent}{four_spaces}right: ")?;
-            right.fmt_on_level(f, level + 1)?;
-        } else {
-            // leaf node
-            writeln!(f, "{indent}{four_spaces}points: [")?;
-            for point in self.points.as_ref().unwrap() {
-                write!(f, "{indent}{four_spaces}{four_spaces}(")?;
-
-                for (i, component) in point.as_ref().iter().enumerate() {
-                    if i != 0 {
-                        write!(f, ",\t")?;
-                    }
-                    write!(f, "{component:+}")?;
-                }
-                writeln!(f, ")")?;
+                write!(f, "{indent}{four_spaces}right: ")?;
+                right.fmt_recursively(f, FormatMode::Text { level: level + 1 })?;
+                write!(f, "{indent}}}")?;
             }
-            writeln!(f, "{indent}{four_spaces}]")?;
-        }
-        write!(f, "{indent}}}")?;
+            (_, _, FormatMode::Text { .. }) => {
+                // leaf node
+                writeln!(f, "KdTree {{")?;
+                writeln!(f, "{indent}{four_spaces}points: [")?;
+                for point in self.points.as_ref().unwrap() {
+                    write!(f, "{indent}{four_spaces}{four_spaces}(")?;
 
-        if level != 0 {
+                    for (i, component) in point.as_ref().iter().enumerate() {
+                        if i != 0 {
+                            write!(f, ",\t")?;
+                        }
+                        write!(f, "{component:+}")?;
+                    }
+                    writeln!(f, ")")?;
+                }
+                writeln!(f, "{indent}{four_spaces}]")?;
+                write!(f, "{indent}}}")?;
+            }
+
+            (Some(left), Some(right), FormatMode::TikZ) => {
+                // internal node
+                todo!()
+            }
+            (_, _, FormatMode::TikZ) => {
+                // leaf node
+                todo!()
+            }
+        }
+
+        if let FormatMode::Text { level: 1.. } = mode {
             writeln!(f)?;
         }
 
@@ -67,26 +92,11 @@ fn dimension_label(dim: usize) -> String {
     }
 }
 
-impl<A: Float + Zero + One + Div<f64> + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
-    KdTree<A, T, U>
-{
-    pub fn display_tikz(&self) -> KdTreeDisplayTikz<'_, A, T, U> {
-        if self.dimensions != 2 {
-            panic!(
-                "can only visualize 2-dimensional kd trees, but this one is at {} dimensions",
-                self.dimensions
-            );
-        }
-
-        KdTreeDisplayTikz(self)
-    }
-}
-
 impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq> fmt::Debug
     for KdTree<A, T, U>
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.fmt_on_level(f, 0)
+        self.fmt_recursively(f, FormatMode::Text { level: 0 })
     }
 }
 
@@ -125,6 +135,8 @@ where
 "#
         )?;
 
+        self.0.fmt_recursively(f, FormatMode::TikZ)?;
+
         writeln!(
             f,
             r#"\end{{tikzpicture}}
@@ -132,5 +144,20 @@ where
         )?;
 
         todo!()
+    }
+}
+
+impl<A: Float + Zero + One + Div<f64> + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
+    KdTree<A, T, U>
+{
+    pub fn display_tikz(&self) -> KdTreeDisplayTikz<'_, A, T, U> {
+        if self.dimensions != 2 {
+            panic!(
+                "can only visualize 2-dimensional kd trees, but this one is at {} dimensions",
+                self.dimensions
+            );
+        }
+
+        KdTreeDisplayTikz(self)
     }
 }
