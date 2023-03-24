@@ -6,8 +6,16 @@ use crate::KdTree;
 
 #[derive(Copy, Clone)]
 enum FormatMode<A: Float + Zero + One + fmt::Display> {
-    Text { level: usize },
-    TikZ { min_x: A, max_x: A, min_y: A, max_y: A },
+    Text {
+        level: usize,
+    },
+    TikZ {
+        min_x: A,
+        max_x: A,
+        min_y: A,
+        max_y: A,
+        flip_node_position: bool,
+    },
 }
 
 impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]> + std::cmp::PartialEq>
@@ -64,9 +72,65 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                 write!(f, "{indent}}}")?;
             }
 
-            (Some(left), Some(right), FormatMode::TikZ { min_x, max_x, min_y, max_y }) => {
+            (
+                Some(left),
+                Some(right),
+                FormatMode::TikZ {
+                    min_x,
+                    max_x,
+                    min_y,
+                    max_y,
+                    flip_node_position,
+                },
+            ) => {
                 // internal node
                 // draw the split line
+                let split_value = self.split_value.unwrap();
+                let split_dimension = self.split_dimension.unwrap();
+
+                let (first_pos_node, second_pos_node) = match (split_dimension, flip_node_position) {
+                    (0, false) => ( // x top
+                        "".to_string(),
+                        format!(
+                            r" node[anchor=south, align=flush center] {{{split_value} \\[-4pt] {{\tiny L}} x {{\tiny R}}}}"
+                        ),
+                    ),
+                    (0, true) => ( // x bottom
+                        format!(
+                            r" node[anchor=north, align=flush center] {{{{\tiny L}} x {{\tiny R}}}} \\[-4pt] {split_value}"
+                        ),
+                        "".to_string(),
+                    ),
+                    (1, false) => ( // y right
+                        "".to_string(),
+                        format!(
+                            r" node[anchor=west, align=flush left] {{{{\tiny R}} \\[-2pt] y {split_value} \\[-2pt] {{\tiny L}} }}"
+                        ),
+                    ),
+                    (1, true) => ( // y left
+                        format!(
+                            r" node[anchor=east, align=flush right] {{{{\tiny R}} \\[-2pt] {split_value} y \\[-2pt] {{\tiny L}} }}"
+                        ),
+                        "".to_string(),
+                    ),
+                    _ => unreachable!(),
+                };
+
+                match split_dimension {
+                    0 => writeln!(
+                        f,
+                        r"\draw ({split_value}, {min_y}){} -- ({split_value}, {max_y}){}",
+                        first_pos_node, second_pos_node,
+                    )?,
+                    1 => writeln!(
+                        f,
+                        r"\draw ({min_x}, {split_value}){} -- ({max_x}, {split_value}){}",
+                        first_pos_node, second_pos_node,
+                    )?,
+                    _ => unreachable!(),
+                }
+
+                // adjust bounding boxes and recurse
                 todo!()
             }
             (_, _, FormatMode::TikZ { .. }) => {
@@ -74,7 +138,12 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                 // just draw each point
                 write!(f, r"\draw[fill=black]")?;
                 for point in self.points.as_ref().unwrap() {
-                    write!(f, "\n{indent}({}, {}) circle[radius=0.05]", point.as_ref()[0], point.as_ref()[1])?;
+                    write!(
+                        f,
+                        "\n{indent}({}, {}) circle[radius=0.05]",
+                        point.as_ref()[0],
+                        point.as_ref()[1]
+                    )?;
                 }
                 writeln!(f, ";")?;
             }
@@ -121,8 +190,8 @@ where
     <A as Div<f64>>::Output: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let &[min_x, min_y] = self.0.min_bounds.as_ref() else { panic!() };
-        let &[max_x, max_y] = self.0.max_bounds.as_ref() else { panic!() };
+        let &[min_x, min_y] = self.0.min_bounds.as_ref() else { unreachable!() };
+        let &[max_x, max_y] = self.0.max_bounds.as_ref() else { unreachable!() };
 
         writeln!(
             f,
@@ -139,7 +208,16 @@ where
 "#
         )?;
 
-        self.0.fmt_recursively(f, FormatMode::TikZ { min_x, max_x, min_y, max_y })?;
+        self.0.fmt_recursively(
+            f,
+            FormatMode::TikZ {
+                min_x,
+                max_x,
+                min_y,
+                max_y,
+                flip_node_position: false,
+            },
+        )?;
 
         writeln!(
             f,
