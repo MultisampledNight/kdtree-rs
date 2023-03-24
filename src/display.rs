@@ -148,7 +148,7 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                                     min_x: split_value,
                                     ..bounds
                                 },
-                                flip_node_position: true,
+                                flip_node_position: false,
                             },
                         )
                     }
@@ -171,7 +171,7 @@ impl<A: Float + Zero + One + fmt::Display, T: std::cmp::PartialEq, U: AsRef<[A]>
                                     min_y: split_value,
                                     ..bounds
                                 },
-                                flip_node_position: true,
+                                flip_node_position: false,
                             },
                         )
                     }
